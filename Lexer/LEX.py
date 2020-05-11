@@ -2,10 +2,11 @@ import sys
 import ply.lex as lex
 
 reserved = {
-    # BOOL
+    'bool': 'BOOL',
     'true': 'TRUE',
     'false': 'FALSE',
-    # CELL
+    'int': 'INT',
+    'CELL': 'CELL',
     'EMPTY': 'EMPTY',
     'WALL': 'WALL',
     'BOX': 'BOX',
@@ -13,15 +14,14 @@ reserved = {
     'UNDEF': 'UNDEF',
     # INCLUDE
     'in': 'IN',
-    'all in': 'ALL_IN',
-    'some in': 'SOME_IN',
+    'all': 'ALL',
+    'some': 'SOME',
     'less': 'LESS',
-    'all less': 'ALL_LESS',
-    'some less': 'SOME_LESS',
     # CYCLE
     'from': 'FROM',
     'to': 'TO',
-    'with step': 'WITH_STEP',
+    'with': 'WITH',
+    'step': 'STEP',
     'do': 'DO',
     # IF
     'if': 'IF',
@@ -43,7 +43,7 @@ class Lexer:
     def __init__(self):
         self.lexer = lex.lex(module=self)
 
-    tokens = ['DECIMAL', 'CELL',
+    tokens = ['DECIMAL',
               'ASSIGNMENT', 'PLUS',
               'MINUS', 'AND', 'OR', 'NAME',
               'LBRACKET', 'RBRACKET',
@@ -87,7 +87,13 @@ class Lexer:
         return self.lexer.token()
 
 
-data = 'from 0 to 10 do go up true'
+data = 'int a <= 10;' \
+       'from a to 20 with step 1 do function ' \
+       'a <= a + 1;' \
+       'go up and pick left & drop right;' \
+       'end;' \
+       'if a less 20 do function go down end;' \
+       '- some in all in  some less all less false bool EMPTY WALL BOX EXIT UNDEF CELL | drop '
 lexer = Lexer()
 lexer.input(data)
 while True:
