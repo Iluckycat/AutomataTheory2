@@ -26,18 +26,13 @@ reserved = {
     # IF
     'if': 'IF',
     # ROBOT
-    'go left': 'GO_LEFT',
-    'go right': 'GO_RIGHT',
-    'go up': 'GO_UP',
-    'go down': 'GO_DOWN',
-    'pick left': 'PICK_LEFT',
-    'pick right':  'PICK_RIGHT',
-    'pick up': 'PICK_UP',
-    'pick down': 'PICK_DOWN',
-    'drop left': 'DROP_LEFT',
-    'drop right':  'DROP_RIGHT',
-    'drop up': 'DROP_UP',
-    'drop down': 'DROP_DOWN',
+    'go': 'GO',
+    'left': 'LEFT',
+    'right': 'RIGHT',
+    'up': 'UP',
+    'down': 'DOWN',
+    'pick': 'PICK',
+    'drop': 'DROP',
     # FUNCTION
     'function': 'FUNCTION',
     'end': 'END',
@@ -50,7 +45,7 @@ class Lexer:
 
     tokens = ['DECIMAL', 'CELL',
               'ASSIGNMENT', 'PLUS',
-              'MINUS', 'AND', 'OR',
+              'MINUS', 'AND', 'OR', 'NAME',
               'LBRACKET', 'RBRACKET',
               'NEWLINE', 'SEMICOLON',
               'COMMA'] + list(reserved.values())
@@ -71,6 +66,11 @@ class Lexer:
         t.value = int(t.value)
         return t
 
+    def t_NAME(self, t):
+        r'[a-zA-Z_][a-zA-Z_0-9]*'
+        t.type = reserved.get(t.value, 'NAME')
+        return t
+
     def t_NEWLINE(self, t):
         r'\n+'
         t.lexer.lineno += len(t.value)
@@ -86,7 +86,8 @@ class Lexer:
     def token(self):
         return self.lexer.token()
 
-data = 'from 0 to 10 do go up'
+
+data = 'from 0 to 10 do go up true'
 lexer = Lexer()
 lexer.input(data)
 while True:
