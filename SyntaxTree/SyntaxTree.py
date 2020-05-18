@@ -1,4 +1,4 @@
-class node(object):
+class Node(object):
     # object constructor
     def __init__(self, t='const', val=None,  ch=None, no=None, pos=None):
         self.type = t
