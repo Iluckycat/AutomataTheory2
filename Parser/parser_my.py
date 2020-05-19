@@ -54,7 +54,7 @@ class Parser(object):
                         |types variable ASSIGNMENT initialization"""
         if len(p) == 3:
             p[0] = Node('declaration', value='VARIABLE', children=p[2], lineno=p.lineno(1), lexpos=p.lexpos(1))
-        else: p[0] = Node('declaration', value='VARIANT', children=[Node('init', value=p[2], lineno=p.lineno(1), lexpos=p.lexpos(1)), p[4], Node('init_end')], lineno=p.lineno(1), lexpos=p.lexpos(1))
+        else: p[0] = Node('declaration', value='VARIABLE', children=[Node('init', value=p[2], lineno=p.lineno(1), lexpos=p.lexpos(1)), p[4], Node('init_end')], lineno=p.lineno(1), lexpos=p.lexpos(1))
     def p_types(self, p):
         """types : INT
                 |BOOL
@@ -132,6 +132,10 @@ class Parser(object):
         """logic_expression : expression AND expression
                             | expression OR expression
                             | MINUS expression"""
+        if len(p) == 3:
+            p[0] = Node('unar_logic_op', value=p[1], children=p[2], lineno=p.lineno(1), lexpos=p.lexpos(1))
+        else:
+            p[0] = Node('bin_logic_op', value=p[2], children=[p[1], p[3]], lineno=p.lineno(2), lexpos=p.lexpos(2))
 
     # CONSTANTS
 
@@ -159,3 +163,34 @@ class Parser(object):
         """assignment : variable ASSIGNMENT expression"""
         p[0] = Node('assignment', value=p[1], children=p[3], lineno=p.lineno(2), lexpos=p.lexpos(2))
 
+    def p_cmp(self, p):
+        """cmp: expression CMP variable
+                | variable CMP variable"""
+        p[0] = Node('compare', value=p[1], children=p[3],lineno=p.lineno(2), lexpos=p.lexpos(2))
+
+    def p_from(self, p):
+        """from : FROM expression TO expression DO function
+                | FROM expression TO expression WITH STEP expression DO function"""
+        p[0] = Node('from', children={'condition': p[2], 'body': p[4]}, lineno=p.lineno(1), lexpos=p.lexpos(1))
+
+    def p_if(self, p):
+        """if : IF logic_expression function_call"""
+
+    def p_function(self, p):
+        """"""
+
+    def p_return(self, p):
+        """return : RETURN expression"""
+        p[0] = Node('return', children=p[2], lineno=p.lineno(1), lexpos=p.lexpos(1))
+
+    #SYNTAX ERRORS
+    def p_decl_error(self, p):
+        """declaration : VARIANT error
+                        | VARIANT variant ASSIGNMENT error
+                        | declaration error"""
+        if len(p) == 3:
+            p[0] = Node('error', value='Declaration error', lineno=p.lineno(2), lexpos=p.lexpos(2))
+            sys.stderr.write(f'==> Error in variant declaration\n')
+        else:
+            p[0] = Node('error', value='Initialization error', lineno=p.lineno(2), lexpos=p.lexpos(2))
+            sys.stderr.write(f'==> Error in variant initialization\n')

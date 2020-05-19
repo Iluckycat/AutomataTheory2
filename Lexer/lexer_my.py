@@ -121,7 +121,12 @@ class Lexer:
         return self.lexer.token()
 
 
-data = 'a <= 10;' \
+data = ''' n <= 10 
+           r <= 2
+        function multiplay from 1 to n do function n <= r; r <= r + n end end 
+         do multiplay
+         ''' \
+       'a <= 10;' \
        'from a to 20 with step 1 do function ' \
        'a <= a + 1;' \
        'go up & pick left & drop right;' \
