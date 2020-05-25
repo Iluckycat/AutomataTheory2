@@ -14,11 +14,11 @@ class Variable:
         self.index = index
         self.value = value
         if isinstance(self.value, int):
-            self.type = 'int'
+            self.types = 'int'
         elif (self.value == 'false') | (self.value == 'true'):
-            self.type = 'bool'
+            self.types = 'bool'
         elif (self.value == 'EMPTY') | (self.value == 'WALL') | (self.value == 'BOX') | (self.value == 'EXIT') | (self.value == 'UNDEF'):
-            self.type = 'cell'
+            self.types = 'cell'
 
 
 
@@ -93,7 +93,7 @@ class Interpreter:
                 child = node.children[0].children
                 if child.type == 'index':
                     tmp_index.append(child.value)
-                    print(tmp_index)
+                    # print(tmp_index)
                 else:
                     child = child.children
                     while child[0].type != 'index':
@@ -102,9 +102,15 @@ class Interpreter:
                     tmp_index.append(child[1].value)
                     tmp_index.append(child[0].value)
                     tmp_index.reverse()
-                    print(tmp_index)
-                tmp_smb = Variable(node.children[1].value, tmp_index)
-                print()
+                    # print(tmp_index)
+                tmp_smb = Variable(int(node.children[1].value), tmp_index)
+                self.symbol_table = {node.children[0].value: tmp_smb}
+
+                print(tmp_smb.index)
+                print(tmp_smb.value)
+                print(tmp_smb.types)
+
+
                 # tmp = {node.children[0].value: list.append(tmp_smb)}
         # elif node.type == 'assignment':
         #     if node.children[0].value not in self.symbol_table:
