@@ -1,30 +1,25 @@
-class Node(object):
-    # object constructor
-    def __init__(self, t='const', val=None,  ch=None, no=None, pos=None):
-        self.type = t
-        self.value = val
-        self.child = ch or []
-        self.acc = None
-        self.lineno = no
-        self.lexpos = pos
+class Node:
+    def __init__(self, node_type, value=None, children=None, lineno=None, lexpos=None):
+        self.type = node_type
+        self.value = value
+        self.children = children
+        self.lineno = lineno
+        self.lexpos = lexpos
 
-    # object representation
     def __repr__(self):
-        return f'{self.type} {self.value}'
+        return f'''{self.type} {self.value} {self.lineno}:{self.lexpos}'''
 
-    # print Tree
-    def print(self, lvl=0):
-        # offset
+    def print(self, level = 0):
         if self is None:
             return
-        print(' ' * lvl, self)
-        if isinstance(self.child, list):
-            for child in self.child:
-                child.print(lvl + 1)
-        elif isinstance(self.child, node):
-            self.child.print(lvl + 1)
-        elif isinstance(self.child, dict):
-            for key, value in self.child.items():
-                print(' ' * (lvl + 1), key)
+        print(' ' * level, self)
+        if isinstance(self.children, Node):
+            self.children.print(level+1)
+        elif isinstance(self.children, list):
+            for child in self.children:
+                child.print(level + 1)
+        elif isinstance(self.children, dict):
+            for key, value in self.children.items():
+                print(' ' * (level + 1), key)
                 if value:
-                    value.print(lvl + 2)
+                    value.print(level + 2)

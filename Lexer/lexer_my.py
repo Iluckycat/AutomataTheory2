@@ -11,7 +11,6 @@ reserved = {
     # IF
     'if': 'IF',
     # FUNCTION
-    'main': 'MAIN',
     'function': 'FUNCTION',
     'end': 'END',
     'do': 'DO'
@@ -123,8 +122,13 @@ class Lexer:
 
 data = ''' n <= 10 
            r <= 2
-        function multiplay from 1 to n do function n <= r; r <= r + n end end 
-         do multiplay
+           function multiplay from 1 to n do function tmp <= r; r <= r + tmp end end 
+           do multiplay
+           n <= 2 
+           r <= 2
+           d <= 3
+           function degree_up from 1 to d do multiply end
+           do degree_up
          ''' \
        'a <= 10;' \
        'from a to 20 with step 1 do function ' \
@@ -133,11 +137,11 @@ data = ''' n <= 10
        'end;' \
        'if a less 20 do function go down end;' \
        '- some in all in  some less all less false EMPTY WALL BOX EXIT UNDEF CELL | drop 0.234'
-lexer = Lexer()
-lexer.input(data)
-while True:
-    token = lexer.token()
-    if token is None:
-        break
-    else:
-        print(token)
+# lexer = Lexer()
+# lexer.input(data)
+# while True:
+#     token = lexer.token()
+#     if token is None:
+#         break
+#     else:
+#         print(token)
