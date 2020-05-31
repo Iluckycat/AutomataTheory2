@@ -11,6 +11,8 @@ from Errors.errors import InterpreterIndexError
 from Errors.errors import InterpreterNameError
 from Errors.errors import InterpreterValueError
 from Errors.errors import InterpreterTypeError
+from Errors.errors import InterpreterFuncCallError
+from Robot.robot import Robot, Cell, cells
 
 sys.path.insert(0, '../SyntaxTree')
 from SyntaxTree import Node
@@ -157,55 +159,47 @@ class Interpreter:
 
         elif node.type == 'variable':
             if self.scope == 0:
+                fl = False
                 if node.value in self.symbol_table[self.scope].keys():
                     tmp = self.list_of_ind(node)
                     for i in self.symbol_table[self.scope][node.value]:
                         if tmp == i.index:
+                            fl = True
                             return i.value
+                else:
+                    raise InterpreterNameError
+                if not fl:
+                    raise InterpreterIndexError
             else:
                 c = self.scope
+                fl1 = False
+                fl2 = False
                 while c >= 0:
                     if node.value in self.symbol_table[c].keys():
+                        fl2 = True
                         tmp = self.list_of_ind(node)
                         for i in self.symbol_table[c][node.value]:
                             if tmp == i.index:
+                                fl1 = True
                                 return i.value
                     c -= 1
+                if not fl2:
+                    raise InterpreterNameError
+                if not fl1:
+                    raise InterpreterIndexError
         elif node.type == 'var':
             if self.scope == 0:
                 if node.value in self.symbol_table[self.scope].keys():
                     return self.symbol_table[self.scope][node.value]
+                else:
+                    raise InterpreterNameError
             else:
                 c = self.scope
                 while c >= 0:
                     if node.value in self.symbol_table[c].keys():
                         return self.symbol_table[c][node.value]
                     c -= 1
-
-            # name = node.value
-            # tmp_index = list()
-            # # tmp_index = self.get_index(node)
-            # child = node.children
-            # if child.type == 'index':
-            #     tmp_index.append(child.value)
-            #     # print(tmp_index)
-            # else:
-            #     child = child.children
-            #     while child[0].type != 'index':
-            #         tmp_index.append(child[1].value)
-            #         child = child[0].children
-            #     tmp_index.append(child[1].value)
-            #     tmp_index.append(child[0].value)
-            #     tmp_index.reverse()
-            # tmp_list = self.symbol_table[self.scope].get(name)
-            # if tmp_list is not None:
-            #     for i in tmp_list:
-            #         if i.index == tmp_index:
-            #             return i.value
-            #         else:
-            #             raise InterpreterUndeclaredError
-            # else:
-            #     raise InterpreterUndeclaredError
+                raise InterpreterNameError
 
         elif node.type == 'const':
             try:
@@ -222,31 +216,85 @@ class Interpreter:
 
         elif node.type == 'operation':
             if node.value == '+':
-                return self.binar_plus(self.interpreter_node(node.children[0]), self.interpreter_node(node.children[1]))
+                try:
+                    return self.binar_plus(self.interpreter_node(node.children[0]), self.interpreter_node(node.children[1]))
+                except InterpreterTypeError:
+                    print(self.error.call(self.error_types['TypeError'], node))
+                    sys.exit()
             if node.value == '-':
-                return self.binar_minus(self.interpreter_node(node.children[0]),
-                                        self.interpreter_node(node.children[1]))
+                try:
+                    return self.binar_minus(self.interpreter_node(node.children[0]),
+                                            self.interpreter_node(node.children[1]))
+                except InterpreterTypeError:
+                    print(self.error.call(self.error_types['TypeError'], node))
+                    sys.exit()
         elif node.type == 'un_operation':
             tmp = self.interpreter_node(node.children)
-            return self.unar_minus(tmp)
-
+            try:
+                return self.unar_minus(tmp)
+            except InterpreterTypeError:
+                print(self.error.call(self.error_types['TypeError'], node))
+                sys.exit()
         elif node.type == 'assignment':
             val = node.children[0].value
-            tmp_index = self.list_of_ind(node.children[0])
+            try:
+                tmp_index = self.list_of_ind(node.children[0])
+            except:
+                print(self.error.call(self.error_types[IndexError], node))
+                sys.exit()
             if self.scope == 0:
                 if val not in self.symbol_table[self.scope].keys():
-                    self.symbol_table[self.scope][val] = [Variable(self.interpreter_node(node.children[1]), tmp_index), ]
+                    if node.children[0].type == 'variable':
+                        self.symbol_table[self.scope][val] = [Variable(self.interpreter_node(node.children[1]), tmp_index), ]
+                    elif node.children[0].type == 'var' and node.children[1].type == 'var':
+                        self.symbol_table[self.scope][val] = self.interpreter_node(node.children[1])
+                    elif node.children[0].type == 'var' and isinstance(self.interpreter_node(node.children[1]), list):
+                        v = self.interpreter_node(node.children[1])
+                        j = 0
+                        for i in v:
+                            self.symbol_table[self.scope][val] = [Variable(i, j), ]
+                            j += 1
                 else:
-                    fl = False
-                    tmp = 0
-                    for i in self.symbol_table[self.scope][val]:
-                        if tmp_index == i.index:
-                            fl = True
-                            tmp = i
-                    if fl:
-                        tmp.value = self.interpreter_node(node.children[1])
-                    else:
-                        self.add_in_tab(Variable(self.interpreter_node(node.children[1]), tmp_index), val)
+                    if node.children[0].type == 'variable':
+                        fl = False
+                        tmp = 0
+                        for i in self.symbol_table[self.scope][val]:
+                            if tmp_index == i.index:
+                                fl = True
+                                tmp = i
+                        if fl:
+                            try:
+                                tmp.value = self.interpreter_node(node.children[1])
+                            except InterpreterNameError:
+                                print(self.error.call(self.error_types['UndeclaredError'], node))
+                                sys.exit()
+                            except InterpreterIndexError:
+                                print(self.error.call(self.error_types['IndexError'], node))
+                                sys.exit()
+                            except InterpreterTypeError:
+                                print(self.error.call(self.error_types['TypeError'], node))
+                                sys.exit()
+                        else:
+                            try:
+                                self.add_in_tab(Variable(self.interpreter_node(node.children[1]), tmp_index), val)
+                            except InterpreterNameError:
+                                print(self.error.call(self.error_types['UndeclaredError'], node))
+                                sys.exit()
+                            except InterpreterIndexError:
+                                print(self.error.call(self.error_types['IndexError'], node))
+                                sys.exit()
+                            except InterpreterTypeError:
+                                print(self.error.call(self.error_types['TypeError'], node))
+                                sys.exit()
+                    elif node.children[0].type == 'var' and node.children[1].type == 'var':
+                        self.symbol_table[self.scope][val] = self.interpreter_node(node.children[1])
+                    elif node.children[0].type == 'var' and isinstance(self.interpreter_node(node.children[1]), list):
+                        v = self.interpreter_node(node.children[1])
+                        j = 0
+                        for i in v:
+                            self.symbol_table[self.scope][val][j] = Variable(i, j)
+                            j += 1
+
             else:
                 ct = 0
                 fl = False
@@ -260,7 +308,17 @@ class Interpreter:
                                 tmp = i
                                 break
                             if fl:
-                                tmp.value = self.interpreter_node(node.children[1])
+                                try:
+                                    tmp.value = self.interpreter_node(node.children[1])
+                                except InterpreterNameError:
+                                    print(self.error.call(self.error_types['UndeclaredError'], node))
+                                    sys.exit()
+                                except InterpreterIndexError:
+                                    print(self.error.call(self.error_types['IndexError'], node))
+                                    sys.exit()
+                                except InterpreterTypeError:
+                                    print(self.error.call(self.error_types['TypeError'], node))
+                                    sys.exit()
                                 fl2 = True
                                 break
                         ct += 1
@@ -268,51 +326,30 @@ class Interpreter:
                         if val not in self.symbol_table[self.scope].keys():
                             self.symbol_table[self.scope][val] = [Variable(self.interpreter_node(node.children[1]), tmp_index),]
                         else:
-                            self.add_in_tab(Variable(self.interpreter_node(node.children[1]), tmp_index), val)
-
-            # tmp_index = list()
-            # fl = False
-            # # tmp_index = self.get_index(node)
-            # child = node.children[0].children
-            # if child.type == 'index':
-            #     tmp_index.append(child.value)
-            #     # print(tmp_index)
-            # else:
-            #     child = child.children
-            #     while child[0].type != 'index':
-            #         tmp_index.append(child[1].value)
-            #         child = child[0].children
-            #     tmp_index.append(child[1].value)
-            #     tmp_index.append(child[0].value)
-            #     tmp_index.reverse()
-            # if self.symbol_table[self.scope].get(node.children[0].value) is None:
-            #     tmp_list = list()
-            #     tmp_list.append(Variable(self.interpreter_node(node.children[1]), tmp_index))
-            #     self.symbol_table[self.scope][node.children[0].value] = tmp_list
-            # else:
-            #     tmp_list = self.symbol_table[self.scope].get(node.children[0].value)
-            #     for i in tmp_list:
-            #         tmp_type = i.types
-            #         if i.index == tmp_index:
-            #             if tmp_type == self.getType(self.interpreter_node(node.children[1])):
-            #                 i.value = self.interpreter_node(node.children[1])
-            #                 fl = True
-            #             else:
-            #                 raise InterpreterTypeError
-            #     if not fl:
-            #         if tmp_type == self.getType(self.interpreter_node(node.children[1])):
-            #             tmp_list.append(Variable(self.interpreter_node(node.children[1]), tmp_index))
-            #             self.symbol_table[self.scope][node.children[0].value] = tmp_list
-            #         else:
-            #             raise InterpreterTypeError
-
+                            try:
+                                self.add_in_tab(Variable(self.interpreter_node(node.children[1]), tmp_index), val)
+                            except InterpreterNameError:
+                                print(self.error.call(self.error_types['UndeclaredError'], node))
+                                sys.exit()
+                            except InterpreterIndexError:
+                                print(self.error.call(self.error_types['IndexError'], node))
+                                sys.exit()
+                            except InterpreterTypeError:
+                                print(self.error.call(self.error_types['TypeError'], node))
+                                sys.exit()
         elif node.type == 'logic_expr':
             if node.value == '&':
                 if node.children[0].type == 'variable' and node.children[1].type == 'variable':
                     return self.interpreter_node(node.children[0]) and self.interpreter_node(node.children[1])
+                else:
+                    print(self.error.call(self.error_types['TypeError'], node))
+                    sys.exit()
             elif node.value == '/':
                 if node.children[0].type == 'variable' and node.children[1].type == 'variable':
                     return self.interpreter_node(node.children[0]) | self.interpreter_node(node.children[1])
+                else:
+                    print(self.error.call(self.error_types['TypeError'], node))
+                    sys.exit()
             elif node.value == 'in':
                 if (node.children[0].type == 'variable' or node.children[0].type == 'const') and node.children[
                     1].type == 'variable':
@@ -320,12 +357,16 @@ class Interpreter:
                         return True
                     else:
                         return False
+
                 elif (node.children[0].type == 'variable' or node.children[0].type == 'const') and node.children[
                     1].type == 'var':
                     for i in self.symbol_table[self.scope][node.children[1].value]:
                         if self.interpreter_node(node.children[0]) == i.value:
                             return True
                     return False
+                else:
+                    print(self.error.call(self.error_types['TypeError'], node))
+                    sys.exit()
             elif node.value == 'all in':
                 if node.children[0].type == 'var' and node.children[1].type == 'var':
                     fl = 0
@@ -338,6 +379,9 @@ class Interpreter:
                         return True
                     else:
                         return False
+                else:
+                    print(self.error.call(self.error_types['TypeError'], node))
+                    sys.exit()
             elif node.value == 'some in':
                 if node.children[0].type == 'var' and node.children[1].type == 'var':
                     fl = 0
@@ -350,6 +394,9 @@ class Interpreter:
                         return True
                     else:
                         return False
+                else:
+                    print(self.error.call(self.error_types['TypeError'], node))
+                    sys.exit()
             elif node.value == 'less':
                 if (node.children[0].type == 'variable' or node.children[0].type == 'const') and node.children[
                     1].type == 'variable':
@@ -357,7 +404,7 @@ class Interpreter:
                         return True
                     else:
                         return False
-                if (node.children[0].type == 'variable' or node.children[0].type == 'const') and node.children[
+                elif (node.children[0].type == 'variable' or node.children[0].type == 'const') and node.children[
                     1].type == 'var':
                     fl = 0
                     for i in self.symbol_table[self.scope][node.children[1].value]:
@@ -367,6 +414,9 @@ class Interpreter:
                             return True
                         else:
                             return False
+                else:
+                    print(self.error.call(self.error_types['TypeError'], node))
+                    sys.exit()
             elif node.value == 'all less':
                 if node.children[0].type == 'var' and node.children[1].type == 'var':
                     fl = 0
@@ -385,27 +435,86 @@ class Interpreter:
                     return False
                 else:
                     return True
+            else:
+                print(self.error.call(self.error_types['TypeError'], node))
+                sys.exit()
+
         elif node.type == 'if':
-            if self.interpreter_node(node.children[0]):
+            cond = False
+            try:
+                cond = self.interpreter_node(node.children[0])
+            except InterpreterValueError:
+                print(self.error.call(self.error_types['TypeError'], node))
+                sys.exit()
+            except InterpreterNameError:
+                print(self.error.call(self.error_types['UndeclaredError'], node))
+                sys.exit()
+            except InterpreterIndexError:
+                print(self.error.call(self.error_types['IndexError'], node))
+                sys.exit()
+            if cond:
                 self.interpreter_node(node.children[1])
         elif node.type == 'from_cycle':
-            self.op_from(node)
+            try:
+                self.op_from(node)
+            except InterpreterNameError:
+                print(self.error.call(self.error_types['UndeclaredError'], node))
+                sys.exit()
+            except InterpreterIndexError:
+                print(self.error.call(self.error_types['IndexError'], node))
+                sys.exit()
+            except InterpreterTypeError:
+                print(self.error.call(self.error_types['TypeError'], node))
+                sys.exit()
+        elif node.type == 'from_cycle_ws':
+            try:
+                self.op_from(node)
+            except InterpreterNameError:
+                print(self.error.call(self.error_types['UndeclaredError'], node))
+                sys.exit()
+            except InterpreterIndexError:
+                print(self.error.call(self.error_types['IndexError'], node))
+                sys.exit()
+            except InterpreterTypeError:
+                print(self.error.call(self.error_types['TypeError'], node))
+                sys.exit()
         elif node.type == 'function_call':
-            if node.children.value in self.functions.keys():
-                self.scope += 1
-                self.symbol_table.append(dict())
-                body = self.functions[node.children.value].children['body']
-                self.interpreter_node(body)
-                if body.children[1] == 'variable' or body.children[1] == 'var' or body.children[1] == 'const':
-                    val = self.interpreter_node(body.children[1])
-                    self.scope -= 1
-                    self.symbol_table.pop()
-                    return val
-                else:
-                    self.scope -= 1
-                    self.symbol_table.pop()
+            try:
+                return self.function_call(node)
+            except InterpreterApplicationCall:
+                print(self.error.call(self.error_types['ApplicationCall'], node))
+                sys.exit()
+            except InterpreterFuncCallError:
+                print(self.error.call(self.error_types['FuncCallError'], node))
+                sys.exit()
+            # if node.children.value in self.functions.keys():
+            #     self.scope += 1
+            #     self.symbol_table.append(dict())
+            #     body = self.functions[node.children.value].children['body']
+            #     self.interpreter_node(body)
+            #     if body.children[1] == 'variable' or body.children[1] == 'var' or body.children[1] == 'const':
+            #         val = self.interpreter_node(body.children[1])
+            #         self.scope -= 1
+            #         self.symbol_table.pop()
+            #         return val
+            #     else:
+            #         self.scope -= 1
+            #         self.symbol_table.pop()
+            # else:
+            #     print(self.error.call(self.error_types['FuncCallError'], node))
+            #     sys.exit()
         elif node.type == 'function':
             pass
+        elif node.type == 'command':
+            if node.value == 'go':
+                res = self.go(node.children)
+            elif node.value == 'pick':
+                res = self.pick(node.children)
+            elif node.value == 'drop':
+                res = self.drop(node.children)
+            else:
+                res = self.look(node.children)
+            return res
 
     def binar_plus(self, val1, val2):
         if isinstance(val1, int) and isinstance(val2, int):
@@ -462,17 +571,27 @@ class Interpreter:
     def op_from(self, node):
         f = self.interpreter_node(node.children['from'])
         t = self.interpreter_node(node.children['to'])
-        if node.type == 'from':
+        if not (isinstance(f, int) and isinstance(t,int)):
+            raise InterpreterTypeError
+        if node.type == 'from_cycle':
             step = 1
         else:
             step = self.interpreter_node(node.children['with_step'])
+            if not isinstance(step, int):
+                raise InterpreterTypeError
         if step > 0:
             while f < t:
-                self.interpreter_node(node.children['body'])
+                try:
+                    self.interpreter_node(node.children['body'])
+                except Exception:
+                    self.interpreter_node(node.children['call'])
                 f += step
         elif step < 0:
             while f > t:
-                self.interpreter_node(node.children['body'])
+                try:
+                    self.interpreter_node(node.children['body'])
+                except Exception:
+                    self.interpreter_node(node.children['call'])
                 f += step
 
     def check_index(self, node):
@@ -483,21 +602,54 @@ class Interpreter:
             else:
                 return False
 
+    def function_call(self, node):
+        if node.children.value == 'main':
+            raise InterpreterApplicationCall
+        if node.children.value in self.functions.keys():
+            self.scope += 1
+            if self.scope > 75:
+                self.scope -= 1
+                raise RecursionError from None
+            self.symbol_table.append(dict())
+            body = self.functions[node.children.value].children['body']
+            self.interpreter_node(body)
+            if body.children[1] == 'variable' or body.children[1] == 'var' or body.children[1] == 'const':
+                var = self.interpreter_node(body.children[1])
+                self.scope -= 1
+                self.symbol_table.pop()
+                return var
+            else:
+                self.scope -= 1
+                self.symbol_table.pop()
+        else:
+            raise InterpreterFuncCallError
 
-# b = (1, 2, 3, 45, 89, 0, -5)
-# a = Variable('true', b)
-# print(a.value, '\n')
-# print(a.index, '\n')
-# print(a.type)
-data = ''' function main
-x() <= 1
-x(1) <= 1
-x(2) <= 500
-from x(2) - 2 to 0 with step -1 do function
+    def go(self, children):
+        return self.robot.go(children.value)
+
+    def pick(self, children):
+        return self.robot.pick(children.value)
+
+    def drop(self, children):
+        return self.robot.drop(children.value)
+
+    def look(self, children):
+        return self.robot.look(children.value)
+
+    
+
+
+
+data = ''' function fibonachi
 x(3) <= x(1) + x()
 x(1) <= x()
 x() <= x(3)
 end
+function main
+x() <= 0
+x(1) <= 3
+x(2) <= 4
+from x(2) - 2 to 0 with step -1 do fibonachi
 end
            '''
 

@@ -130,10 +130,10 @@ class Parser(object):
             p[0] = Node('from_cycle', children={'from': p[2], 'to': p[4], 'call': p[5]},
                                   lineno=p.lineno(1), lexpos=p.lexpos(1))
         elif len(p) == 13:
-            p[0] = Node('from_cycle', children={'from': p[2], 'to': p[4], 'body': p[11], 'with_step': p[7]},
+            p[0] = Node('from_cycle_ws', children={'from': p[2], 'to': p[4], 'body': p[11], 'with_step': p[7]},
                                   lineno=p.lineno(1), lexpos=p.lexpos(1))
         else:
-            p[0] = Node('from_cycle', children={'from': p[2], 'to': p[4], 'call': p[8], 'with_step': p[7]},
+            p[0] = Node('from_cycle_ws', children={'from': p[2], 'to': p[4], 'call': p[8], 'with_step': p[7]},
                                   lineno=p.lineno(1), lexpos=p.lexpos(1))
 
     def p_function_call(self, p):
