@@ -70,21 +70,23 @@ class Parser(object):
         p[0] = Node('assignment', value=p[2], children=[p[1], p[3]], lineno=p.lineno(1), lexpos=p.lexpos(1))
 
     def p_variable(self, p):
-        """variable : NAME index
-                   | NAME LBRACKET index RBRACKET"""
-        if len(p) == 3:
-            p[0] = Node('variable', value=p[1], children=p[2], lineno=p.lineno(1), lexpos=p.lexpos(1))
-        else:
+        """variable : NAME LBRACKET index RBRACKET"""
+        # if len(p) == 3:
+        #     p[0] = Node('variable', value=p[1], children=p[2], lineno=p.lineno(1), lexpos=p.lexpos(1))
+        # else:
             # p[2] = SyntaxTreeNode('bracket', value=p[2], lineno=p.lineno(2), lexpos=p.lexpos(2))
             # p[4] = SyntaxTreeNode('bracket', value=p[4], lineno=p.lineno(4), lexpos=p.lexpos(4))
-            p[0] = Node('variable', value=p[1], children=p[3], lineno=p.lineno(1), lexpos=p.lexpos(1))
+        p[0] = Node('variable', value=p[1], children=p[3], lineno=p.lineno(1), lexpos=p.lexpos(1))
+    def p_var(self,p):
+        """var : NAME"""
+        p[0] = Node('var', value=p[1])
 
     def p_index(self, p):
         """index :
                  | index COMMA INT
                  | INT"""
         if len(p) == 1:
-            p[0] = Node('index', value=0)
+            p[0] = Node('null_index', value=0)
         elif len(p) == 4:
             p[3] = Node('index', value=p[3], lineno=p.lineno(3), lexpos=p.lexpos(3))
             p[0] = Node('list_index', children=[p[1], p[3]], lineno=p.lineno(3), lexpos=p.lexpos(3))
@@ -93,6 +95,7 @@ class Parser(object):
 
     def p_expression(self, p):
         """expression : variable
+                        | var
                         | const
                         | operation
                         | logic_expr
@@ -111,7 +114,7 @@ class Parser(object):
                     | expression MINUS expression
                     | MINUS expression"""
         if len(p) == 3:
-            p[0] = Node('operation', value=p[1], children=p[2], lineno=p.lineno(1), lexpos=p.lexpos(1))
+            p[0] = Node('un_operation', value=p[1], children=p[2], lineno=p.lineno(1), lexpos=p.lexpos(1))
         else:
             p[0] = Node('operation', value=p[2], children=[p[1], p[3]], lineno=p.lineno(2), lexpos=p.lexpos(2))
 
@@ -207,15 +210,15 @@ class Parser(object):
         self.ok = False
 
 
-data = ''' n(1,2,3,5,9,7) <= 10;
-           n() <= 20;
-           m <= 20;
-           
-        ''' \
+data = ''' function main
+m <= true / false;
+d <= -m;
+d <= 2 in n;
+end;'''
 
 
-parser = Parser()
-tree, ok, functions = parser.parse(data)
-tree.print()
-print(ok)
-# functions['func'].children['body'].print()
+# parser = Parser()
+# tree, ok, functions = parser.parse(data)
+# tree.print()
+# print(ok)
+# functions['function'].children['body'].print()

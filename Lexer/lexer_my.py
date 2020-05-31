@@ -48,7 +48,7 @@ class Lexer:
         return t
 
     def t_OR(self, t):
-        r'\|'
+        r'\/'
         return t
 
     def t_COMMA(self, t):
@@ -129,6 +129,7 @@ data = ''' n <= 10
            d <= 3
            function degree_up from 1 to d do multiply end
            do degree_up
+           a / b
          ''' \
        'a <= 10;' \
        'from a to 20 with step 1 do function ' \
@@ -137,11 +138,11 @@ data = ''' n <= 10
        'end;' \
        'if a less 20 do function go down end;' \
        '- some in all in  some less all less false EMPTY WALL BOX EXIT UNDEF CELL | drop 0.234'
-# lexer = Lexer()
-# lexer.input(data)
-# while True:
-#     token = lexer.token()
-#     if token is None:
-#         break
-#     else:
-#         print(token)
+lexer = Lexer()
+lexer.input(data)
+while True:
+    token = lexer.token()
+    if token is None:
+        break
+    else:
+        print(token)
